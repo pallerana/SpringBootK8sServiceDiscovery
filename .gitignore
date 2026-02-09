@@ -2,10 +2,15 @@
 build/
 out/
 target/
+*.class
+*.jar
+*.war
+!gradle/wrapper/gradle-wrapper.jar
+*.ear
+*.nar
 
 # Gradle
 .gradle/
-!gradle/wrapper/gradle-wrapper.jar
 
 # IDE
 .idea/
@@ -14,6 +19,7 @@ target/
 *.swp
 *.swo
 *~
+.cursor/
 
 # OS
 .DS_Store
@@ -21,3 +27,14 @@ Thumbs.db
 
 # Logs
 *.log
+logs/
+
+# Env / secrets
+.env
+.env.local
+*.pem
+
+# Test / coverage
+.coverage
+htmlcov/
+test-output/
