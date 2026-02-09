@@ -1,0 +1,33 @@
+# ServiceAccount and RBAC for client-service to call Kubernetes API for service discovery
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: client-service
+  namespace: service-discovery-demo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: service-discovery-reader
+  namespace: service-discovery-demo
+rules:
+  - apiGroups: [""]
+    resources: ["services", "endpoints", "pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: client-service-discovery
+  namespace: service-discovery-demo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: service-discovery-reader
+subjects:
+  - kind: ServiceAccount
+    name: client-service
+    namespace: service-discovery-demo

@@ -1,0 +1,4 @@
+rootProject.name = 'spring-k8s-service-discovery'
+
+include 'book-service'
+include 'client-service'

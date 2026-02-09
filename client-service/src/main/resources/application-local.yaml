@@ -1,0 +1,12 @@
+# Use when running outside Kubernetes (e.g. IDE). Book-service must be on localhost:8080.
+spring:
+  main:
+    cloud-platform: none
+  cloud:
+    kubernetes:
+      enabled: false
+
+app:
+  book-service:
+    discovery-enabled: false
+    url: http://localhost:8080

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: client-service
+  namespace: service-discovery-demo
+  labels:
+    app: client-service
+spec:
+  selector:
+    app: client-service
+  ports:
+    - name: http
+      port: 8081
+      targetPort: 8081
+  type: ClusterIP
