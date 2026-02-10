@@ -1,3 +1,8 @@
+app:
+  book-service:
+    # Client implementation: reactive (WebClient), rest-template (RestTemplate), or rest-client (RestClient). Default: reactive
+    client-type: reactive
+
 spring:
   application:
     name: client-service
