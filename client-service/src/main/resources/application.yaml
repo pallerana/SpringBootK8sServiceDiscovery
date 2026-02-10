@@ -1,6 +1,6 @@
 app:
   book-service:
-    # Client implementation: reactive (WebClient), rest-template (RestTemplate), or rest-client (RestClient). Default: reactive
+    # Client implementation: reactive | rest-template | rest-client | feign. Default: reactive
     client-type: reactive
 
 spring:

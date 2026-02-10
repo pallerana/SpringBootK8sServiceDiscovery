@@ -13,6 +13,7 @@ class BookServiceClientFactory {
 	static final String REACTIVE = "reactive";
 	static final String REST_TEMPLATE = "rest-template";
 	static final String REST_CLIENT = "rest-client";
+	static final String FEIGN = "feign";
 
 	@Bean
 	@Primary
@@ -20,10 +21,12 @@ class BookServiceClientFactory {
 			@Value("${app.book-service.client-type:" + REACTIVE + "}") String clientType,
 			@ReactiveBookServiceClient BookServiceClient reactiveClient,
 			@BlockingBookServiceClient BookServiceClient blockingClient,
-			@RestClientBookServiceClient BookServiceClient restClientBookServiceClient) {
+			@RestClientBookServiceClient BookServiceClient restClientBookServiceClient,
+			@FeignBookServiceClient BookServiceClient feignBookServiceClient) {
 		return switch (clientType.toLowerCase()) {
 			case REST_TEMPLATE, "blocking" -> blockingClient;
 			case REST_CLIENT -> restClientBookServiceClient;
+			case FEIGN, "openfeign" -> feignBookServiceClient;
 			default -> reactiveClient;
 		};
 	}

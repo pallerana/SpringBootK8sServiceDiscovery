@@ -5,6 +5,11 @@ spring:
   cloud:
     kubernetes:
       enabled: false
+    openfeign:
+      client:
+        config:
+          book-service:
+            url: http://localhost:8080
 
 app:
   book-service:
