@@ -1,0 +1,19 @@
+# Optional: expose book-service externally via LoadBalancer.
+# Apply with: kubectl apply -f k8s/book-service/service-loadbalancer.yaml
+# Then: curl http://<EXTERNAL-IP>:8080/books (get EXTERNAL-IP with kubectl get svc -n service-discovery-demo book-service-lb)
+# Internal traffic continues to use the ClusterIP service (book-service).
+apiVersion: v1
+kind: Service
+metadata:
+  name: book-service-lb
+  namespace: service-discovery-demo
+  labels:
+    app: book-service
+spec:
+  selector:
+    app: book-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  type: LoadBalancer

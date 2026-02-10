@@ -1,3 +1,6 @@
+# ClusterIP is the default. metadata.name (book-service) is the DNS name used by
+# client-service (see app.book-service.service-name). Kubernetes creates the DNS
+# record automatically; no separate DNS manifest.
 apiVersion: v1
 kind: Service
 metadata:
@@ -13,18 +16,3 @@ spec:
       port: 8080
       targetPort: 8080
   type: ClusterIP
----
-# Optional: use for external access (e.g. minikube tunnel or cloud LB)
-# apiVersion: v1
-# kind: Service
-# metadata:
-#   name: book-service-lb
-#   namespace: service-discovery-demo
-# spec:
-#   selector:
-#     app: book-service
-#   ports:
-#     - name: http
-#       port: 8080
-#       targetPort: 8080
-#   type: LoadBalancer

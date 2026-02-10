@@ -13,7 +13,8 @@ target/
 .gradle/
 
 # IDE
-.idea/
+.idea/*
+!.idea/gradle.xml
 *.iml
 .vscode/
 *.swp

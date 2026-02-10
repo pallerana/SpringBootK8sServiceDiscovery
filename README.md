@@ -8,9 +8,9 @@ Production-grade illustration of **service discovery** for Spring Boot apps on K
 
 ## Concepts
 
-- **Kubernetes Service** exposes a stable DNS name (`book-service.<namespace>.svc.cluster.local`) and load-balances to pod IPs.
-- **Spring Cloud Kubernetes** provides a `DiscoveryClient` and integrates with **Spring Cloud Load Balancer** so the client resolves the logical name `book-service` to live endpoints.
-- **client-service** calls `http://book-service/books` using a configurable HTTP client (WebClient, RestTemplate, RestClient, or OpenFeign); the host is resolved by the cluster.
+- **Kubernetes Service** exposes a stable DNS name and load-balances to pod IPs. When you create a Service, Kubernetes (CoreDNS) automatically creates a DNS record—there is no separate DNS manifest.
+- **Spring Cloud Kubernetes** provides a `DiscoveryClient` and integrates with **Spring Cloud Load Balancer** so the client resolves the configured service name to live endpoints.
+- **client-service** calls the book service using a configurable HTTP client; the host is the Kubernetes Service name (configurable via `app.book-service.service-name`), resolved by the cluster.
 
 ---
 
@@ -120,7 +120,57 @@ kubectl apply -f k8s/client-service/
 
 ---
 
+## Service DNS (Kubernetes)
+
+Kubernetes provides a built-in DNS service. When you create a **Service**, a DNS record is created automatically—you do not add a separate "DNS entry." Each service gets a DNS name from its **name** and **namespace**:
+
+**Format:** `<service-name>.<namespace>.svc.cluster.local`
+
+**Examples** (namespace `service-discovery-demo`):
+
+- Short name (same namespace): `book-service` → `http://book-service:8080/books`
+- FQDN: `book-service.service-discovery-demo.svc.cluster.local` → `http://book-service.service-discovery-demo.svc.cluster.local:8080/books`
+
+Pods in the same namespace can use the short name (`book-service`). From another namespace or for explicitness, use the FQDN.
+
+**Test book-service from a pod in the cluster:**
+
+```bash
+# Short name (same namespace)
+curl http://book-service:8080/books
+
+# FQDN (works from any namespace)
+curl http://book-service.service-discovery-demo.svc.cluster.local:8080/books
+```
+
+The **Service** `metadata.name` (e.g. `book-service`) is the DNS name. If you rename the Service, set `app.book-service.service-name` in client-service to match.
+
+---
+
+## Load Balancer (external access)
+
+To expose a service externally, use **type: LoadBalancer** on the Service. Traffic is distributed across the service’s pods.
+
+An optional manifest is provided: `k8s/book-service/service-loadbalancer.yaml`. Apply it to get an external IP (or use `minikube tunnel` / your cloud’s LB). Then:
+
+```bash
+curl http://<EXTERNAL-IP>:8080/books
+```
+
+Internal communication stays via ClusterIP and DNS; LoadBalancer is only for external access.
+
+---
+
 ## Configuration
+
+### Local vs production (K8s): how book-service URL is chosen
+
+| Environment | How book-service is reached | Config |
+|-------------|-----------------------------|--------|
+| **Production (K8s)** | Host = **`app.book-service.service-name`** (default `book-service`), the Kubernetes Service name. Resolved by cluster DNS / Spring Cloud Kubernetes. No URL property. | Default `application.yaml`. Set `app.book-service.service-name` to match the provider’s Service `metadata.name` if different. Do **not** set `app.book-service.url`. |
+| **Local (no cluster)** | Fixed URL, e.g. **`http://localhost:8080`**. | Use profile **`local`**. Sets `app.book-service.url` and `app.book-service.discovery-enabled: false`. For Feign, also sets `spring.cloud.openfeign.client.config.<service-name>.url`. |
+
+In production you never configure localhost. The base config (no `app.book-service.url`) is the prod config: client-service uses the logical name **book-service**, and the cluster resolves it to the book-service pods in the same namespace.
 
 ### client-service: HTTP client choice
 
@@ -151,8 +201,8 @@ All four use the same load-balanced discovery in Kubernetes (and the same fixed 
 
 | Component       | Purpose |
 |-----------------|--------|
-| **book-service** | `spring.application.name=book-service` (must match the K8s Service name). |
-| **client-service** | `spring.cloud.kubernetes.discovery` (namespace, port name). In local profile, `app.book-service.url` and `app.book-service.discovery-enabled: false`. |
+| **book-service** | `spring.application.name` must match the K8s Service `metadata.name` (that name is the DNS name). |
+| **client-service** | `app.book-service.service-name`: Kubernetes Service name to call (default `book-service`). Must match the provider’s Service name. In local profile, `app.book-service.url` and `app.book-service.discovery-enabled: false`. |
 | **RBAC**        | client-service uses a ServiceAccount with Role (Services, Endpoints, Pods) so the Kubernetes API can be used for discovery. |
 | **OpenFeign (local)** | In local profile, Feign target URL is set via `spring.cloud.openfeign.client.config.book-service.url`. |
 

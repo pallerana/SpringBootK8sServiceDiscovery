@@ -1,5 +1,11 @@
+# Default config: used in Kubernetes (prod). Do NOT set app.book-service.url here.
+# In K8s, client-service uses service discovery: the host is the Kubernetes Service
+# name (service-name below), resolved by cluster DNS. For local dev, use profile "local".
 app:
   book-service:
+    # Kubernetes Service name (DNS short name in same namespace). Must match the Service metadata.name.
+    service-name: book-service
+    # discovery-enabled: true (default) in prod → use K8s discovery
     # Client implementation: reactive | rest-template | rest-client | feign. Default: reactive
     client-type: reactive
 
