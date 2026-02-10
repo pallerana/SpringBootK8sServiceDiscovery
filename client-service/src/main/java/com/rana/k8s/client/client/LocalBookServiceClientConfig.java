@@ -31,7 +31,7 @@ class LocalBookServiceClientConfig {
 	BookServiceClient blockingBookServiceClient(
 			RestTemplate localRestTemplate,
 			@Value("${app.book-service.url}") String baseUrl) {
-		return new BlockingBookServiceClientImpl(localRestTemplate, baseUrl);
+		return new RestTemplateBookServiceClientImpl(localRestTemplate, baseUrl);
 	}
 
 	@Bean

@@ -14,7 +14,7 @@ import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
-class BlockingBookServiceClientImpl implements BookServiceClient {
+class RestTemplateBookServiceClientImpl implements BookServiceClient {
 
 	private final RestTemplate restTemplate;
 	private final String basePath;
@@ -22,7 +22,7 @@ class BlockingBookServiceClientImpl implements BookServiceClient {
 	@Override
 	public Mono<List<Book>> fetchAll() {
 		return Mono.fromCallable(() -> {
-					log.debug("Calling book service for /books (blocking)");
+					log.debug("Calling book service for /books (RestTemplate)");
 					var response = restTemplate.exchange(
 							basePath + "/books",
 							HttpMethod.GET,

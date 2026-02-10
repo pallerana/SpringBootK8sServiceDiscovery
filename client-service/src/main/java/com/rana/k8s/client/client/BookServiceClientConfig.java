@@ -39,7 +39,7 @@ class BookServiceClientConfig {
 	@Bean
 	@BlockingBookServiceClient
 	BookServiceClient blockingBookServiceClient(RestTemplate loadBalancedRestTemplate) {
-		return new BlockingBookServiceClientImpl(loadBalancedRestTemplate, BASE_PATH);
+		return new RestTemplateBookServiceClientImpl(loadBalancedRestTemplate, BASE_PATH);
 	}
 
 	@Bean

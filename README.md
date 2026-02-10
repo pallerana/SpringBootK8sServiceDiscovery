@@ -126,11 +126,13 @@ kubectl apply -f k8s/client-service/
 
 Choose how client-service calls book-service via **`app.book-service.client-type`**:
 
-| Value           | Implementation | Notes                          |
-|----------------|----------------|---------------------------------|
-| `reactive`     | WebClient      | Default; non-blocking, reactive |
-| `rest-template`| RestTemplate   | Blocking; classic Spring client |
-| `rest-client`  | RestClient     | Blocking; Spring 6.1+ sync API  |
+| Value            | Implementation class              | Notes                              |
+|------------------|-----------------------------------|------------------------------------|
+| `reactive`       | `BookServiceClientImpl` (WebClient) | Default; non-blocking, reactive   |
+| `rest-template`  | `RestTemplateBookServiceClientImpl` | Blocking; classic Spring client  |
+| `rest-client`    | `RestClientBookServiceClientImpl`   | Blocking; Spring 6.1+ sync API   |
+
+The value `blocking` is accepted as an alias for `rest-template`.
 
 Example (YAML):
 
@@ -158,7 +160,7 @@ All three use the same load-balanced discovery in Kubernetes (and the same fixed
 
 - Both apps expose Spring Boot **liveness and readiness**; K8s Deployments probe `/actuator/health/liveness` and `/actuator/health/readiness`.
 - client-service uses **timeouts** on outbound calls and maps upstream failures to **502** with a structured error body.
-- **Factory pattern** for the book client: one interface, three implementations (reactive, RestTemplate, RestClient), selected by configuration.
+- **Factory pattern** for the book client: one interface (`BookServiceClient`), three implementations (`BookServiceClientImpl`, `RestTemplateBookServiceClientImpl`, `RestClientBookServiceClientImpl`), selected by `app.book-service.client-type`.
 
 ---
 
