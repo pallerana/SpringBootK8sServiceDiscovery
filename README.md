@@ -10,7 +10,7 @@ Production-grade illustration of **service discovery** for Spring Boot apps on K
 
 - **Kubernetes Service** exposes a stable DNS name (`book-service.<namespace>.svc.cluster.local`) and load-balances to pod IPs.
 - **Spring Cloud Kubernetes** provides a `DiscoveryClient` and integrates with **Spring Cloud Load Balancer** so the client resolves the logical name `book-service` to live endpoints.
-- **client-service** calls `http://book-service/books` using a configurable HTTP client (WebClient, RestTemplate, or RestClient); the host is resolved by the cluster.
+- **client-service** calls `http://book-service/books` using a configurable HTTP client (WebClient, RestTemplate, RestClient, or OpenFeign); the host is resolved by the cluster.
 
 ---
 
@@ -126,25 +126,26 @@ kubectl apply -f k8s/client-service/
 
 Choose how client-service calls book-service via **`app.book-service.client-type`**:
 
-| Value            | Implementation class              | Notes                              |
-|------------------|-----------------------------------|------------------------------------|
-| `reactive`       | `BookServiceClientImpl` (WebClient) | Default; non-blocking, reactive   |
-| `rest-template`  | `RestTemplateBookServiceClientImpl` | Blocking; classic Spring client  |
-| `rest-client`    | `RestClientBookServiceClientImpl`   | Blocking; Spring 6.1+ sync API   |
+| Value            | Implementation class              | Notes                                  |
+|------------------|-----------------------------------|----------------------------------------|
+| `reactive`       | `BookServiceClientImpl` (WebClient) | Default; non-blocking, reactive       |
+| `rest-template`  | `RestTemplateBookServiceClientImpl` | Blocking; classic Spring client      |
+| `rest-client`    | `RestClientBookServiceClientImpl`   | Blocking; Spring 6.1+ sync API       |
+| `feign`          | `FeignBookServiceClientImpl` (OpenFeign) | Declarative; integrates with Spring Cloud |
 
-The value `blocking` is accepted as an alias for `rest-template`.
+The value `blocking` is an alias for `rest-template`; `openfeign` is an alias for `feign`.
 
 Example (YAML):
 
 ```yaml
 app:
   book-service:
-    client-type: rest-client   # or reactive | rest-template
+    client-type: feign   # or reactive | rest-template | rest-client
 ```
 
-Or at runtime: `--app.book-service.client-type=rest-client`
+Or at runtime: `--app.book-service.client-type=feign`
 
-All three use the same load-balanced discovery in Kubernetes (and the same fixed URL in local profile).
+All four use the same load-balanced discovery in Kubernetes (and the same fixed URL in local profile). For local + Feign, the URL is set via `spring.cloud.openfeign.client.config.book-service.url`.
 
 ### Other settings
 
@@ -153,6 +154,7 @@ All three use the same load-balanced discovery in Kubernetes (and the same fixed
 | **book-service** | `spring.application.name=book-service` (must match the K8s Service name). |
 | **client-service** | `spring.cloud.kubernetes.discovery` (namespace, port name). In local profile, `app.book-service.url` and `app.book-service.discovery-enabled: false`. |
 | **RBAC**        | client-service uses a ServiceAccount with Role (Services, Endpoints, Pods) so the Kubernetes API can be used for discovery. |
+| **OpenFeign (local)** | In local profile, Feign target URL is set via `spring.cloud.openfeign.client.config.book-service.url`. |
 
 ---
 
@@ -160,7 +162,28 @@ All three use the same load-balanced discovery in Kubernetes (and the same fixed
 
 - Both apps expose Spring Boot **liveness and readiness**; K8s Deployments probe `/actuator/health/liveness` and `/actuator/health/readiness`.
 - client-service uses **timeouts** on outbound calls and maps upstream failures to **502** with a structured error body.
-- **Factory pattern** for the book client: one interface (`BookServiceClient`), three implementations (`BookServiceClientImpl`, `RestTemplateBookServiceClientImpl`, `RestClientBookServiceClientImpl`), selected by `app.book-service.client-type`.
+- **Factory pattern** for the book client: one interface (`BookServiceClient`), four implementations (`BookServiceClientImpl`, `RestTemplateBookServiceClientImpl`, `RestClientBookServiceClientImpl`, `FeignBookServiceClientImpl`), selected by `app.book-service.client-type`.
+
+---
+
+## HTTP client comparison (OpenFeign, WebClient, RestTemplate, RestClient)
+
+| Aspect | OpenFeign | WebClient | RestTemplate | RestClient |
+|--------|-----------|-----------|--------------|------------|
+| **Style** | Declarative (interface) | Imperative, fluent | Imperative | Imperative, fluent |
+| **Blocking** | Yes (default) | No (reactive) | Yes | Yes |
+| **Spring era** | Spring Cloud | Spring 5+ | Spring 3+ | Spring 6.1+ (Boot 3.2+) |
+| **Load balancing** | Built-in with Spring Cloud LB | Via `LoadBalanced` filter | Via `@LoadBalanced` | Via shared request factory |
+| **Resilience** | Integrates with Resilience4j / circuit breaker | Manual or reactor operators | Manual | Manual |
+
+### When to use which
+
+- **WebClient** – New reactive stacks (WebFlux, reactive DB). Non-blocking; best when the whole call chain is reactive.
+- **RestClient** – New blocking code on Spring Boot 3.2+. Preferred over RestTemplate; modern, fluent sync API.
+- **RestTemplate** – Legacy blocking client. Prefer RestClient or Feign for new code.
+- **OpenFeign** – Many services/endpoints; want declarative APIs and built-in resilience (circuit breaker, retries) with minimal code.
+
+**Summary:** Prefer **WebClient** for reactive; **RestClient** for simple blocking; **OpenFeign** when you want declarative clients and resilience out of the box. Avoid new use of **RestTemplate**.
 
 ---
 
